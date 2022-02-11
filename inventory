@@ -1,0 +1,95 @@
+local dialog = require("dialog")                                   
+ 
+function buildInventory(invBlock)
+    inventory = {}
+    invBlock = invBlock or peripheral.wrap("right")
+    size = invBlock.size()
+    for i = 1,size do
+       if invBlock.getItemDetail(i) ~= nil then
+           inventory[i] = invBlock.getItemDetail(i)
+       else
+           inventory[i] = "EMPTY"
+       end     
+    end
+    return inventory
+end
+ 
+function set(object)
+    object = object or false
+    data = buildInventory(object)
+    file = fs.open("inventoryConfig","w")
+    file.write(textutils.serialize(data))   
+    file.close()
+end
+ 
+function get()
+    file= fs.open("inventoryConfig","r")
+    data = file.readAll()
+    file.close() 
+    return textutils.unserialize(data)    
+end
+ 
+function display(visStart,visEnd)
+    inv = get()
+    invList = {}
+    visList = {}
+    visStart = visStart or 1
+    visEnd = visEnd or 10
+    count = 1
+    if visEnd > #inv then visEnd = #inv end 
+    for i = visStart, visEnd do
+        
+        invList[count] = inv[i].displayName
+        if invList[count] == nil then
+            invList[count] = "EMPTY" 
+        end
+        count = count + 1 
+    end 
+    monitor = peripheral.wrap("top")
+    monitor.clear() 
+    title = "Chest"
+    box =  dialog.dialog(invList,title,monitor,1,1,15,11)
+    boxW,boxH = box.getSize() 
+    box.setBackgroundColor(colors.gray)
+    box.setCursorPos(boxW,2)
+    upx = boxW --location of up
+    upy = 2 --location of up
+    box.write("^" )
+    box.setCursorPos(boxW,boxH)
+    box.write("v")
+    downx = boxW
+    downy = boxH
+    box.setBackgroundColor(colors.white)
+    for i = 3, boxH-1 do
+       box.setBackgroundColor(colors.lightGray)
+       box.setCursorPos(boxW,i)
+       box.write(" ")
+       box.setBackgroundColor(colors.lightBlue)  
+    end
+    box.setCursorPos(0,0) 
+    while true do
+        local event,side,x,y = os.pullEvent("monitor_touch")
+        term.setCursorPos(2,2)
+        
+        if x == upx and y == upy then
+            term.write("up")
+            if visStart > 1 then
+              visStart = visStart - 1
+              visEnd = visEnd -1
+            end
+        elseif x == downx and y == downy then
+            term.write("down")
+            if visStart < #invList and visEnd > 9   then
+              visStart = visStart + 1
+              visEnd = visEnd + 1
+            end
+        end
+        display(visStart,visEnd)
+        return false
+    end 
+     
+    
+    
+end
+set() 
+display() 
